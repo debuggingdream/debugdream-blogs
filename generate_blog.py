@@ -9,7 +9,12 @@ from io import BytesIO
 
 # --- Configuration ---
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+BASE_GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+MODELS_TO_TRY = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+]
 
 # --- Audience Segments (rotated weekly) ---
 AUDIENCES = [
@@ -56,21 +61,35 @@ def get_weekly_audience():
     return AUDIENCES[week_number % len(AUDIENCES)]
 
 def call_gemini(prompt):
-    """Helper to call Gemini API and return the text response."""
+    """Helper to call Gemini API with fallback logic for different models."""
     headers = {'Content-Type': 'application/json'}
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
-    response = requests.post(f"{GEMINI_URL}?key={GEMINI_API_KEY}", headers=headers, json=payload)
-    if response.status_code != 200:
-        print(f"Error calling Gemini API: {response.text}")
-        exit(1)
-    data = response.json()
-    try:
-        return data['candidates'][0]['content']['parts'][0]['text'].strip()
-    except (KeyError, IndexError):
-        print("Failed to parse Gemini response.")
-        exit(1)
+
+    for model in MODELS_TO_TRY:
+        url = f"{BASE_GEMINI_URL}/{model}:generateContent?key={GEMINI_API_KEY}"
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            
+            # If 404, the model might be deprecated, try the next one
+            if response.status_code == 404:
+                print(f"Model {model} not found (404). Trying next model...")
+                continue
+                
+            if response.status_code != 200:
+                print(f"Error calling model {model} ({response.status_code}): {response.text}")
+                continue
+
+            data = response.json()
+            return data['candidates'][0]['content']['parts'][0]['text'].strip()
+            
+        except Exception as e:
+            print(f"Exception while calling {model}: {e}")
+            continue
+
+    print("ALL Gemini models failed. Check API key and internet connection.")
+    exit(1)
 
 def select_topic():
     """Use Gemini to dynamically research and pick a blog topic."""
