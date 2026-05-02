@@ -52,7 +52,12 @@ jobs:
           git commit -m "docs: auto-generate weekly blog post [skip ci]"
           git push origin main
 
-      - name: Trigger Cloudflare Deploy Hook
+      - name: Trigger On-Demand Revalidation
         if: steps.check_changes.outputs.changes == 'true'
         run: |
-          curl -X POST ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+          curl -X GET "https://debugdream.com/api/revalidate?secret=${{ secrets.REVALIDATE_SECRET }}"
+
+      # - name: Trigger Cloudflare Deploy Hook
+      #   if: steps.check_changes.outputs.changes == 'true'
+      #   run: |
+      #     curl -X POST ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
