@@ -42,6 +42,32 @@ DEBUGDREAM_SERVICES = [
     "Technology consulting"
 ]
 
+STOP_WORDS = {
+    "how", "to", "your", "for", "the", "a", "in", "is", "why", "what", 
+    "best", "does", "it", "still", "work", "of", "and", "with", "on", 
+    "at", "by", "from", "up", "about", "into", "over", "after", "top",
+    "need", "needs", "agency", "business", "businesses", "more", "can",
+    "will", "how-to", "guide", "tips", "ways", "should", "you", "our"
+}
+
+def get_meaningful_keywords(topic):
+    """Extract 2-3 meaningful keywords from the topic for image search."""
+    # Remove special characters and lowercase
+    clean_topic = re.sub(r'[^\w\s]', ' ', topic).lower()
+    words = clean_topic.split()
+    
+    # Filter out stop words and short words
+    keywords = [w for w in words if w not in STOP_WORDS and len(w) > 2]
+    
+    # If we have "nepal" or "kathmandu", keep them but try to get other keywords too
+    # We want to avoid just "nepal" "kathmandu" as search terms usually
+    
+    # Take up to 3 meaningful words
+    if len(keywords) > 3:
+        # Prefer the most descriptive words (often found at the start or middle)
+        return "+".join(keywords[:3])
+    return "+".join(keywords) if keywords else "digital+marketing"
+
 def slugify(text):
     text = text.lower()
     text = re.sub(r'[^\w\s-]', '', text)
@@ -207,7 +233,7 @@ Instructions:
     return content
 
 def download_image(topic, slug):
-    keywords = "+".join(topic.split()[:3])
+    keywords = get_meaningful_keywords(topic)
     primary_url = f"https://source.unsplash.com/1200x630/?{keywords}"
     fallback_url = "https://picsum.photos/1200/630"
     
@@ -274,7 +300,7 @@ def main():
     frontmatter = f"""---
 slug: {slug}
 title: "{topic}"
-date: {date}
+date: "{date}"
 author: "DebugDream Team"
 readTime: {read_time} min
 category: "{category}"
