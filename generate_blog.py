@@ -42,31 +42,17 @@ DEBUGDREAM_SERVICES = [
     "Technology consulting"
 ]
 
-STOP_WORDS = {
-    "how", "to", "your", "for", "the", "a", "in", "is", "why", "what", 
-    "best", "does", "it", "still", "work", "of", "and", "with", "on", 
-    "at", "by", "from", "up", "about", "into", "over", "after", "top",
-    "need", "needs", "agency", "business", "businesses", "more", "can",
-    "will", "how-to", "guide", "tips", "ways", "should", "you", "our"
-}
-
-def get_meaningful_keywords(topic):
-    """Extract 2-3 meaningful keywords from the topic for image search."""
-    # Remove special characters and lowercase
-    clean_topic = re.sub(r'[^\w\s]', ' ', topic).lower()
-    words = clean_topic.split()
-    
-    # Filter out stop words and short words
-    keywords = [w for w in words if w not in STOP_WORDS and len(w) > 2]
-    
-    # If we have "nepal" or "kathmandu", keep them but try to get other keywords too
-    # We want to avoid just "nepal" "kathmandu" as search terms usually
-    
-    # Take up to 3 meaningful words
-    if len(keywords) > 3:
-        # Prefer the most descriptive words (often found at the start or middle)
-        return "+".join(keywords[:3])
-    return "+".join(keywords) if keywords else "digital+marketing"
+def safe_yaml_string(text):
+    """Sanitize string fields to be bulletproof against YAML parsing errors."""
+    if not text:
+        return ""
+    # Replace any double quotes with escaped version
+    text = text.replace('"', '\\"')
+    # Remove any newlines
+    text = text.replace('\n', ' ').replace('\r', ' ')
+    # Specific fix for colons followed by space (breaks YAML block mapping)
+    text = text.replace(': ', ' - ')
+    return text.strip()
 
 def slugify(text):
     text = text.lower()
@@ -205,6 +191,20 @@ Return ONLY the category name. Nothing else."""
     category = category.strip('"\' \n')
     return category if category else "Business Strategy"
 
+def get_image_keywords(topic):
+    """Ask Gemini to suggest 3 visual keywords for image search."""
+    prompt = f"""For a blog post titled "{topic}", suggest exactly 3 simple English keywords for searching a relevant stock photo.
+    Rules:
+    - Keywords must be concrete visual concepts (things you can photograph)
+    - No abstract words like "strategy" or "success"
+    - No location words like "Nepal" or "Kathmandu"
+    - Good examples: "laptop workspace", "shopping cart", "social media phone"
+    - Return only the 3 keywords separated by commas, nothing else"""
+    
+    print(f"Getting image keywords for: {topic}")
+    keywords = call_gemini(prompt).strip()
+    return keywords if keywords else "technology, workspace, digital"
+
 def generate_content(topic):
     audience = get_weekly_audience()
     prompt = f"""Write a complete, professional, and approachable blog post.
@@ -233,8 +233,9 @@ Instructions:
     return content
 
 def download_image(topic, slug):
-    keywords = get_meaningful_keywords(topic)
-    primary_url = f"https://source.unsplash.com/1200x630/?{keywords}"
+    keywords = get_image_keywords(topic)
+    keyword_str = "+".join(k.strip() for k in keywords.split(",")[:3])
+    primary_url = f"https://source.unsplash.com/1200x630/?{keyword_str}"
     fallback_url = "https://picsum.photos/1200/630"
     
     if not os.path.exists('images'):
@@ -294,19 +295,24 @@ def main():
     
     image_path = download_image(topic, slug)
     
-    seo_title = topic[:57] + "..." if len(topic) > 60 else topic
-    seo_description = clean_text[:157] + "..." if len(clean_text) > 160 else clean_text
+    seo_title = safe_yaml_string(topic[:57] + ("..." if len(topic) > 60 else ""))
+    seo_description = safe_yaml_string(clean_text[:157] + ("..." if len(clean_text) > 160 else ""))
+    
+    safe_topic = safe_yaml_string(topic)
+    safe_excerpt = safe_yaml_string(excerpt)
+    safe_category = safe_yaml_string(category)
+    safe_image_alt = safe_yaml_string(f"Digital marketing and business growth in Nepal - {topic}")
 
     frontmatter = f"""---
 slug: {slug}
-title: "{topic}"
-date: "{date}"
+title: "{safe_topic}"
+date: {date}
 author: "DebugDream Team"
 readTime: {read_time} min
-category: "{category}"
-excerpt: "{excerpt}"
+category: "{safe_category}"
+excerpt: "{safe_excerpt}"
 image: "{image_path}"
-imageAlt: "Digital marketing and business growth in Nepal - {topic}"
+imageAlt: "{safe_image_alt}"
 seoTitle: "{seo_title}"
 seoDescription: "{seo_description}"
 ---
