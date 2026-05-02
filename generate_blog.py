@@ -478,10 +478,14 @@ seoDescription: "Read this article on DebugDream."
     
     full_post = frontmatter + content
     
-    with open(f"{slug}.md", "w") as f:
+    # Ensure posts directory exists
+    os.makedirs("posts", exist_ok=True)
+    
+    file_path = f"posts/{slug}.md"
+    with open(file_path, "w") as f:
         f.write(full_post)
         
-    print(f"Blog post generated successfully: {slug}.md")
+    print(f"Blog post generated successfully: {file_path}")
 
 if __name__ == "__main__":
     main()
