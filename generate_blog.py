@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import requests
 import datetime
@@ -195,13 +196,27 @@ Return ONLY the category name. Nothing else."""
 
 # --- Content Generation (Humanized) ---
 
-def generate_content(topic):
+def generate_content(topic, is_ceo=False):
     """Generate blog content with strict anti-AI-tone instructions."""
     audience = get_weekly_audience()
     existing_slugs = get_existing_slugs()
     internal_links_context = f"Here are existing blog post slugs on our site: {', '.join(existing_slugs)}. You MUST naturally insert 2 markdown links to these existing posts where relevant." if existing_slugs else "No existing posts to link to."
 
-    prompt = f"""Write a complete blog post as a senior growth strategist and digital marketing consultant who has 10+ years of hands-on experience.
+    if is_ceo:
+        persona = "You are Rikesh Karma, the CEO and Founder of DebugDream."
+        additional_instructions = """
+- WRITE IN THE FIRST PERSON ("I", "Me", "My").
+- This is a 'CEO Letter' - it should feel strategic, vision-focused, and authoritative.
+- Talk about the future of the industry, your personal philosophy on growth, and how DebugDream is leading the way.
+- Mention your direct contact email naturally for high-level inquiries.
+"""
+    else:
+        persona = "You are a senior growth strategist and digital marketing consultant who has 10+ years of hands-on experience."
+        additional_instructions = ""
+
+    prompt = f"""Write a complete blog post. 
+{persona}
+{additional_instructions}
 
 Topic: {topic}
 
@@ -391,15 +406,17 @@ def main():
         print("GEMINI_API_KEY environment variable is not set.")
         exit(1)
 
+    is_ceo = "--ceo" in sys.argv
+    
     topic, slug = select_topic()
     if not topic:
         print("No new topics could be generated.")
         return
 
-    print(f"Targeting Topic: {topic}")
+    print(f"Targeting Topic: {topic} (CEO Mode: {is_ceo})")
     
     # Step 1: Generate raw content
-    raw_content = generate_content(topic)
+    raw_content = generate_content(topic, is_ceo=is_ceo)
     
     # Step 2: Humanize the content
     content = humanize_content(raw_content, topic)
@@ -430,11 +447,15 @@ def main():
     safe_image_alt = safe_yaml_string(f"{topic}")
     safe_photographer = safe_yaml_string(photographer) if photographer else ""
 
+    author = "Rikesh Karma" if is_ceo else "DebugDream Team"
+    post_type = "ceo_letter" if is_ceo else "regular"
+
     frontmatter = f"""---
 slug: {slug}
 title: "{safe_topic}"
 date: {date}
-author: "DebugDream Team"
+author: "{author}"
+type: {post_type}
 readTime: {read_time} min
 category: "{safe_category}"
 excerpt: "{safe_excerpt}"

@@ -1,0 +1,41 @@
+name: Generate CEO Monthly Insight
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # Runs at 00:00 on day 1 of every month
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pillow pyyaml
+
+      - name: Generate CEO Blog Post
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: python generate_blog.py --ceo
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: automated CEO monthly insight generation" || echo "No changes to commit"
+          git push
+
+      - name: Trigger Website Revalidation
+        run: |
+          curl -X GET "https://debugdream.com/api/revalidate?secret=${{ secrets.REVALIDATE_SECRET }}"
