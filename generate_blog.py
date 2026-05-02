@@ -18,18 +18,9 @@ MODELS_TO_TRY = [
     "gemini-2.0-flash",
 ]
 
-# --- Audience Segments (rotated weekly) ---
+# --- Audience Segments ---
 AUDIENCES = [
-    "Nepal business owners and SMEs in Kathmandu and other cities",
-    "Nepal startups and entrepreneurs",
-    "NGOs and nonprofits operating in Nepal",
-    "International businesses looking to outsource web design, development, or digital marketing to Nepal",
-    "Australian businesses looking for affordable digital services",
-    "Businesses in other countries considering Nepal as an outsourcing destination",
-    "Tech teams and developers looking for agency partnerships",
-    "Hospitality and tourism businesses in Nepal",
-    "E-commerce businesses in Nepal",
-    "Educational institutions in Nepal"
+    "Primary: Nepal businesses (localized case studies for credibility), Secondary: Global founders, startups, SaaS, e-commerce (high-ticket clients)"
 ]
 
 DEBUGDREAM_SERVICES = [
@@ -66,9 +57,10 @@ def slugify(text):
 
 def get_existing_slugs():
     slugs = []
-    for file in os.listdir('.'):
-        if file.endswith('.md'):
-            slugs.append(file[:-3])
+    if os.path.exists('posts'):
+        for file in os.listdir('posts'):
+            if file.endswith('.md'):
+                slugs.append(file[:-3])
     return slugs
 
 def get_weekly_audience():
@@ -132,44 +124,29 @@ def select_topic():
     audience = get_weekly_audience()
     slugs_list = ", ".join(existing_slugs) if existing_slugs else "(none yet)"
 
-    prompt = f"""You are a content strategist for DebugDream, a full-service digital agency based in Kathmandu, Nepal.
+    prompt = f"""You are a senior growth strategist and content director for DebugDream, a premium full-service digital agency.
 
-Your job is to pick ONE blog topic that will perform well on Google and attract the right audience.
+Your job is to pick ONE high-converting, buyer-intent blog topic that brings "closer-to-money" traffic.
 
-THIS WEEK'S PRIMARY TARGET AUDIENCE:
+TARGET AUDIENCE:
 {audience}
-
-ALL AUDIENCES WE SERVE (consider overlap and cross-appeal):
-1. Nepal business owners and SMEs in Kathmandu and other cities
-2. Nepal startups and entrepreneurs
-3. NGOs and nonprofits operating in Nepal
-4. International businesses looking to outsource web design, development, or digital marketing to Nepal
-5. Australian businesses looking for affordable digital services
-6. Businesses in other countries considering Nepal as an outsourcing destination
-7. Tech teams and developers looking for agency partnerships
-8. Hospitality and tourism businesses in Nepal
-9. E-commerce businesses in Nepal
-10. Educational institutions in Nepal
+(Content tone should feel "global premium," not just local-first).
 
 DEBUGDREAM'S SERVICES:
-- Web design and UI/UX
-- Website and app development
-- Digital marketing and paid advertising
-- SEO services
-- Branding and brand identity
-- Video production and podcast production
-- Content creation
-- Custom brand assets
-- Technology consulting
+{", ".join(DEBUGDREAM_SERVICES)}
 
 TOPIC SELECTION RULES:
-- The topic MUST be relevant to the primary target audience above.
-- Research current trends and pick something that would rank on Google for searches made by this audience type.
-- Vary the style: sometimes a comparison post (e.g. "Outsourcing to Nepal vs India — cost comparison"), sometimes an educational post about Nepal's tech industry for international audiences, sometimes a practical guide for local Nepal businesses.
-- The topic should naturally relate to at least one of DebugDream's services.
-- Make the title SEO-friendly, specific, and compelling.
+1. Focus on high-converting angles that agitate pain points.
+2. Use strong hooks. Examples of the style we want:
+   - "Best Website Audit Service for Startups: What Actually Matters"
+   - "How to Choose a Digital Agency Without Getting Burned"
+   - "Why Your Website Isn't Generating Leads: Full Technical Breakdown"
+   - "Next.js vs Shopify vs WordPress: Which One Actually Converts Better?"
+   - "Landing Page vs Full Website: What Drives More Revenue?"
+3. The topic MUST connect to revenue and business outcomes, not just generic education.
+4. Make the title SEO-friendly but highly clickable.
 
-ALREADY WRITTEN TOPICS (avoid these and anything too similar):
+ALREADY WRITTEN TOPICS (avoid these):
 {slugs_list}
 
 Return ONLY the blog post title. Nothing else — no quotes, no explanation, no numbering."""
@@ -221,48 +198,39 @@ Return ONLY the category name. Nothing else."""
 def generate_content(topic):
     """Generate blog content with strict anti-AI-tone instructions."""
     audience = get_weekly_audience()
-    prompt = f"""Write a complete blog post as a senior digital marketing consultant who has 10+ years of hands-on experience.
+    existing_slugs = get_existing_slugs()
+    internal_links_context = f"Here are existing blog post slugs on our site: {', '.join(existing_slugs)}. You MUST naturally insert 2 markdown links to these existing posts where relevant." if existing_slugs else "No existing posts to link to."
+
+    prompt = f"""Write a complete blog post as a senior growth strategist and digital marketing consultant who has 10+ years of hands-on experience.
 
 Topic: {topic}
 
 AUDIENCE: {audience}
 
-WRITING STYLE — THIS IS CRITICAL:
-- Write like a real person. Like you're explaining this to a smart client over coffee.
-- Start with a hook — a specific stat, a bold claim, or a real scenario. Never start with "In today's digital landscape" or "In the ever-evolving world of..."
-- BANNED PHRASES (do not use any of these):
-  * "In today's digital landscape/world/era/age"
-  * "Whether you're a... or a..."
-  * "It's important to note that..."
-  * "In conclusion..."
-  * "Let's dive in" / "Let's explore"
-  * "Navigating the..."
-  * "Harnessing the power of..."
-  * "Game-changer" / "Revolutionize"
-  * "Cutting-edge" / "State-of-the-art"
-  * "Unlock the potential"
-  * "Seamless" / "Seamlessly"
-  * "Comprehensive guide"
-  * "Without further ado"
-  * "At the end of the day"
-  * "It goes without saying"
-- Use short sentences sometimes. Then a longer one. Vary the rhythm.
-- Be specific. Use actual numbers, real costs, concrete examples — not vague generalities.
-- Don't over-explain obvious things. Trust the reader's intelligence.
-- End sections with a clear takeaway, not a wishy-washy transition.
-- The CTA at the end should feel earned, not forced. Mention DebugDream naturally and link to https://debugdream.com.
+WRITING STYLE & PSYCHOLOGY — THIS IS CRITICAL:
+1. The Hook: Start with Problem + Pain + Promise. No generic intros like "In today's digital landscape."
+2. Pattern Interrupts: Use phrases like "Here's what's actually happening:" followed by short, punchy bullets explaining the hidden problem.
+3. Friction Triggers: Agitate the pain. Use phrases like "This is where 80% of stores fail" or "Most founders ignore this, and it costs them revenue."
+4. Curiosity Headers: Don't use boring headers like "Step 1: Navigation". Use "Step 1: The Navigation Mistake That Kills Sales".
+5. The Objection Killer: Before the final conclusion, add a section that destroys common objections (e.g., "Think your site is already optimized? Here's why even high-performing stores leak revenue...").
+6. The End-of-Article Trap: End the article with "If this helped, read this next →" instead of just stopping.
 
-CONTENT RULES:
-- Context:
-    - If the audience is Nepal-based: use Nepal/Kathmandu-specific examples, currency (NPR), and local business scenarios.
-    - If the audience is international: explain Nepal's tech landscape, talent pool, cost advantages, and timezone benefits. Use USD/AUD where relevant.
-    - If the audience is Australian: reference AU market costs for comparison and emphasize Nepal as a quality outsourcing partner.
-- Length: 1500-2000 words. Quality over padding.
-- Structure:
-    - Use H2 and H3 headings for clear organization.
-    - Include practical, actionable advice — not theory.
-    - Use bullet points and lists only where they genuinely help.
-    - Include specific examples, case studies, or scenarios.
+BANNED PHRASES:
+- "In today's digital landscape/world/era/age"
+- "Whether you're a... or a..."
+- "It's important to note that..."
+- "In conclusion..."
+- "Let's dive in" / "Let's explore"
+- "Comprehensive guide"
+
+INTERNAL LINKING & FUNNEL:
+- {internal_links_context}
+- Link to 1 conversion page naturally (e.g., /services or /contact).
+
+STRUCTURE & LENGTH:
+- Length: 1500-2000 words.
+- Short paragraphs. Use visual breaks.
+- Context: Blend "Global Premium" authority with specific, concrete examples. If relevant to Nepal, use high-ticket localized examples.
 
 OUTPUT: Return ONLY the raw markdown body content. No title, no frontmatter, no introductory text, no markdown code block wrappers."""
 
@@ -395,8 +363,29 @@ def download_image(topic, slug):
     
     return "images/placeholder.jpeg", ""
 
-# --- Main Pipeline ---
+def inject_ctas(content):
+    """Programmatically inject CTAs at ~25%, 50%, and 75% scroll depths."""
+    paragraphs = content.split('\n\n')
+    total_p = len(paragraphs)
+    
+    if total_p < 8:
+        return content # Too short to inject 3 CTAs
+        
+    p25 = int(total_p * 0.25)
+    p50 = int(total_p * 0.50)
+    p75 = int(total_p * 0.75)
+    
+    cta_25 = "\n\n> **Want a real breakdown of your digital presence?** We'll show you exactly where users drop off and how to fix it. → [Get a Free UX & SEO Audit](https://debugdream.com/contact)\n\n"
+    cta_50 = "\n\n> **Stop guessing why your site isn't converting.** Download our *25-Point E-commerce UX Checklist* and find the friction points costing you sales. → [Download the Free Checklist](https://debugdream.com/contact)\n\n"
+    cta_75 = "\n\n> **Ready to scale your revenue?** Book a 30-minute teardown call with our senior growth team today, and we'll hand you a prioritized list of fixes. → [Book a Discovery Call](https://debugdream.com/contact)\n\n"
+    
+    paragraphs.insert(p75, cta_75)
+    paragraphs.insert(p50, cta_50)
+    paragraphs.insert(p25, cta_25)
+    
+    return '\n\n'.join(paragraphs)
 
+# --- Main Pipeline ---
 def main():
     if not GEMINI_API_KEY:
         print("GEMINI_API_KEY environment variable is not set.")
@@ -414,6 +403,9 @@ def main():
     
     # Step 2: Humanize the content
     content = humanize_content(raw_content, topic)
+    
+    # Step 2.5: Inject CTAs programmatically
+    content = inject_ctas(content)
     
     # Step 3: Generate metadata
     category = suggest_category(topic)
