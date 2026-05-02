@@ -317,15 +317,16 @@ def get_image_keywords(topic):
     keywords = call_gemini(prompt).strip()
     return keywords if keywords else "technology, workspace, digital"
 
-def download_image(topic, slug):
+def download_image(topic, slug, is_ceo=False):
     """Download a relevant image using Pexels API, with Picsum fallback."""
     keywords = get_image_keywords(topic)
     keyword_query = " ".join(k.strip() for k in keywords.split(",")[:3])
     
-    if not os.path.exists('images'):
-        os.makedirs('images')
+    target_dir = "ceo_images" if is_ceo else "images"
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
         
-    image_path = f"images/{slug}.jpeg"
+    image_path = f"{target_dir}/{slug}.jpeg"
     photographer = ""
     
     # Try Pexels API first
@@ -376,7 +377,7 @@ def download_image(topic, slug):
     except Exception as e:
         print(f"Picsum download failed: {e}")
     
-    return "images/placeholder.jpeg", ""
+    return f"{target_dir}/placeholder.jpeg", ""
 
 def inject_ctas(content):
     """Programmatically inject CTAs at ~25%, 50%, and 75% scroll depths."""
@@ -434,7 +435,7 @@ def main():
     date = datetime.date.today().strftime("%Y-%m-%d")
     
     # Step 4: Download image
-    image_result = download_image(topic, slug)
+    image_result = download_image(topic, slug, is_ceo)
     image_path, photographer = image_result
     
     # Step 5: Build frontmatter with sanitized fields

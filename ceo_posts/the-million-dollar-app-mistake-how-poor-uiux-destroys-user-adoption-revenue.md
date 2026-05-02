@@ -7,7 +7,7 @@ type: ceo_letter
 readTime: 9 min
 category: "Business Strategy"
 excerpt: "Watching your app fail despite huge investment? It's not users, it's design. Uncover the UI/UX mistakes costing you millions."
-image: "images/the-million-dollar-app-mistake-how-poor-uiux-destroys-user-adoption-revenue.jpeg"
+image: "ceo_images/the-million-dollar-app-mistake-how-poor-uiux-destroys-user-adoption-revenue.jpeg"
 imageAlt: "The Million-Dollar App Mistake - How Poor UI/UX Destroys User Adoption & Revenue"
 imageCredit: "Polina Zimmerman"
 seoTitle: "The Million-Dollar App Mistake - How Poor UI/UX Destroys U..."
@@ -122,7 +122,7 @@ We are building a future where digital products are inherently delightful, where
 
 ## Strategic Partnership: The Next Step
 
-If you're ready to stop making the million-dollar app mistake and start seeing your digital product deliver on its true potential, let's talk. This isn't just about a project; it's about a strategic partnership to redefine your digital future. For high-level inquiries and to discuss how DebugDream can architect an unparalleled UI/UX strategy for your enterprise, please reach out to me directly at `rikesh@debugdream.com`.
+If you're ready to stop making the million-dollar app mistake and start seeing your digital product deliver on its true potential, let's talk. This isn't just about a project; it's about a strategic partnership to redefine your digital future. For high-level inquiries and to discuss how DebugDream can architect an unparalleled UI/UX strategy for your enterprise, please reach out to me directly at `rikesh.karmacharya@debugdream.com`.
 
 My team and I are ready to turn your vision into a truly captivating and profitable digital reality. Explore our capabilities further at DebugDream's [services page](/services).
 
