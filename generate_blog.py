@@ -4,11 +4,13 @@ import requests
 import datetime
 import re
 import hashlib
+import yaml
 from PIL import Image
 from io import BytesIO
 
 # --- Configuration ---
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+PEXELS_API_KEY = os.environ.get('PEXELS_API_KEY')
 BASE_GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 MODELS_TO_TRY = [
     "gemini-2.5-flash",
@@ -42,6 +44,8 @@ DEBUGDREAM_SERVICES = [
     "Technology consulting"
 ]
 
+# --- Utility Functions ---
+
 def safe_yaml_string(text):
     """Sanitize string fields to be bulletproof against YAML parsing errors."""
     if not text:
@@ -71,6 +75,23 @@ def get_weekly_audience():
     """Rotate through audiences based on ISO week number."""
     week_number = datetime.date.today().isocalendar()[1]
     return AUDIENCES[week_number % len(AUDIENCES)]
+
+def validate_frontmatter(frontmatter_text):
+    """Validate that YAML frontmatter parses correctly before writing."""
+    try:
+        # Extract the YAML between --- delimiters
+        parts = frontmatter_text.split('---')
+        if len(parts) >= 3:
+            yaml_content = parts[1]
+            yaml.safe_load(yaml_content)
+            print("Frontmatter validation: PASSED")
+            return True
+    except yaml.YAMLError as e:
+        print(f"Frontmatter validation: FAILED — {e}")
+        return False
+    return False
+
+# --- Gemini API ---
 
 def call_gemini(prompt):
     """Helper to call Gemini API with fallback logic for different models."""
@@ -102,6 +123,8 @@ def call_gemini(prompt):
 
     print("ALL Gemini models failed. Check API key and internet connection.")
     exit(1)
+
+# --- Topic Selection ---
 
 def select_topic():
     """Use Gemini to dynamically research and pick a blog topic."""
@@ -154,7 +177,7 @@ Return ONLY the blog post title. Nothing else — no quotes, no explanation, no 
     print(f"Selecting topic for audience: {audience}")
     topic = call_gemini(prompt)
     # Clean any accidental quotes or whitespace
-    topic = topic.strip('"\' \n')
+    topic = topic.strip('"\'  \n')
     slug = slugify(topic)
 
     # Safety check: if slug already exists, append date
@@ -163,6 +186,8 @@ Return ONLY the blog post title. Nothing else — no quotes, no explanation, no 
 
     print(f"Selected topic: {topic}")
     return topic, slug
+
+# --- Category ---
 
 def suggest_category(topic):
     """Use Gemini to suggest a category for the given topic."""
@@ -188,8 +213,112 @@ Return ONLY the category name. Nothing else."""
 
     print(f"Suggesting category for: {topic}")
     category = call_gemini(prompt)
-    category = category.strip('"\' \n')
+    category = category.strip('"\'  \n')
     return category if category else "Business Strategy"
+
+# --- Content Generation (Humanized) ---
+
+def generate_content(topic):
+    """Generate blog content with strict anti-AI-tone instructions."""
+    audience = get_weekly_audience()
+    prompt = f"""Write a complete blog post as a senior digital marketing consultant who has 10+ years of hands-on experience.
+
+Topic: {topic}
+
+AUDIENCE: {audience}
+
+WRITING STYLE — THIS IS CRITICAL:
+- Write like a real person. Like you're explaining this to a smart client over coffee.
+- Start with a hook — a specific stat, a bold claim, or a real scenario. Never start with "In today's digital landscape" or "In the ever-evolving world of..."
+- BANNED PHRASES (do not use any of these):
+  * "In today's digital landscape/world/era/age"
+  * "Whether you're a... or a..."
+  * "It's important to note that..."
+  * "In conclusion..."
+  * "Let's dive in" / "Let's explore"
+  * "Navigating the..."
+  * "Harnessing the power of..."
+  * "Game-changer" / "Revolutionize"
+  * "Cutting-edge" / "State-of-the-art"
+  * "Unlock the potential"
+  * "Seamless" / "Seamlessly"
+  * "Comprehensive guide"
+  * "Without further ado"
+  * "At the end of the day"
+  * "It goes without saying"
+- Use short sentences sometimes. Then a longer one. Vary the rhythm.
+- Be specific. Use actual numbers, real costs, concrete examples — not vague generalities.
+- Don't over-explain obvious things. Trust the reader's intelligence.
+- End sections with a clear takeaway, not a wishy-washy transition.
+- The CTA at the end should feel earned, not forced. Mention DebugDream naturally and link to https://debugdream.com.
+
+CONTENT RULES:
+- Context:
+    - If the audience is Nepal-based: use Nepal/Kathmandu-specific examples, currency (NPR), and local business scenarios.
+    - If the audience is international: explain Nepal's tech landscape, talent pool, cost advantages, and timezone benefits. Use USD/AUD where relevant.
+    - If the audience is Australian: reference AU market costs for comparison and emphasize Nepal as a quality outsourcing partner.
+- Length: 1500-2000 words. Quality over padding.
+- Structure:
+    - Use H2 and H3 headings for clear organization.
+    - Include practical, actionable advice — not theory.
+    - Use bullet points and lists only where they genuinely help.
+    - Include specific examples, case studies, or scenarios.
+
+OUTPUT: Return ONLY the raw markdown body content. No title, no frontmatter, no introductory text, no markdown code block wrappers."""
+
+    print(f"Generating content for: {topic} (audience: {audience})")
+    content = call_gemini(prompt)
+    return content
+
+def humanize_content(content, topic):
+    """Run a second pass to strip any remaining AI patterns and make content feel authentic."""
+    prompt = f"""You are an editor reviewing a blog post about "{topic}". Your job is to make it sound like it was written by a real person, not AI.
+
+Here is the draft:
+
+{content}
+
+EDITING RULES:
+1. Remove any sentence that starts with "In today's..." or "In the ever-evolving..." or similar AI cliches
+2. Replace generic filler sentences with specific, useful information
+3. If you see "Whether you're a... or a..." — rewrite it as a direct statement
+4. Shorten any paragraph that rambles. Cut the fluff.
+5. Make sure the opening paragraph has a strong hook — a surprising fact, a direct question, or a bold statement
+6. Keep all the factual content, headings, links, and structure intact
+7. Don't add new sections or remove existing ones
+8. Don't change any URLs, CTA text, or brand mentions
+9. Keep the same markdown formatting
+
+Return the edited markdown content only. No explanations, no wrapper."""
+
+    print("Running humanization pass...")
+    humanized = call_gemini(prompt)
+    return humanized if humanized else content
+
+def generate_excerpt(topic, content):
+    """Generate a compelling 1-2 sentence excerpt using Gemini."""
+    # Take first 500 chars of content for context
+    content_preview = content[:500]
+    prompt = f"""Write a compelling 1-2 sentence excerpt (max 160 characters) for a blog post.
+
+Title: {topic}
+Content preview: {content_preview}
+
+Rules:
+- Make it specific and intriguing — not generic
+- It should make someone want to click and read more
+- No cliches like "comprehensive guide" or "everything you need to know"
+- Return ONLY the excerpt text. Nothing else."""
+
+    print("Generating excerpt...")
+    excerpt = call_gemini(prompt)
+    excerpt = excerpt.strip('"\'  \n')
+    # Ensure it's within 160 chars
+    if len(excerpt) > 160:
+        excerpt = excerpt[:157] + "..."
+    return excerpt
+
+# --- Image Handling (Pexels API) ---
 
 def get_image_keywords(topic):
     """Ask Gemini to suggest 3 visual keywords for image search."""
@@ -205,69 +334,68 @@ def get_image_keywords(topic):
     keywords = call_gemini(prompt).strip()
     return keywords if keywords else "technology, workspace, digital"
 
-def generate_content(topic):
-    audience = get_weekly_audience()
-    prompt = f"""Write a complete, professional, and approachable blog post.
-
-Topic: {topic}
-
-Instructions:
-- Primary Target Audience: {audience}
-- Tone: Professional, authoritative, yet easy to understand. Adapt the language and examples to the target audience.
-- Context:
-    - If the audience is Nepal-based: use Nepal/Kathmandu-specific examples, currency (NPR), and local business scenarios.
-    - If the audience is international: explain Nepal's tech landscape, talent pool, cost advantages, and timezone benefits. Use USD/AUD where relevant.
-    - If the audience is Australian: reference AU market costs for comparison and emphasize Nepal as a quality outsourcing partner.
-- Length: Minimum 1500 words.
-- Structure:
-    - Use H2 and H3 headings for clear organization.
-    - Include a detailed "Practical Tips" section relevant to the audience.
-    - Use bullet points and lists for readability.
-    - Include real-world examples or scenarios the audience would relate to.
-- Call to Action (CTA): End with a strong CTA mentioning DebugDream, a full-service digital agency based in Kathmandu, Nepal, and link to https://debugdream.com.
-- Output Format: Return ONLY the raw markdown body content. No title, no frontmatter, no introductory text, and no markdown code blocks.
-"""
-
-    print(f"Generating content for: {topic} (audience: {audience})")
-    content = call_gemini(prompt)
-    return content
-
 def download_image(topic, slug):
+    """Download a relevant image using Pexels API, with Picsum fallback."""
     keywords = get_image_keywords(topic)
-    keyword_str = "+".join(k.strip() for k in keywords.split(",")[:3])
-    primary_url = f"https://source.unsplash.com/1200x630/?{keyword_str}"
-    fallback_url = "https://picsum.photos/1200/630"
+    keyword_query = " ".join(k.strip() for k in keywords.split(",")[:3])
     
     if not os.path.exists('images'):
         os.makedirs('images')
         
     image_path = f"images/{slug}.jpeg"
+    photographer = ""
     
-    # Try Unsplash first
-    try:
-        print(f"Attempting image download from Unsplash: {primary_url}")
-        response = requests.get(primary_url, timeout=15)
-        if response.status_code == 200:
-            img = Image.open(BytesIO(response.content))
-            img.convert('RGB').save(image_path, "JPEG", quality=85)
-            print(f"Image saved from Unsplash: {image_path}")
-            return f"/images/{slug}.jpeg"
-    except Exception as e:
-        print(f"Unsplash download failed: {e}")
+    # Try Pexels API first
+    if PEXELS_API_KEY:
+        try:
+            print(f"Searching Pexels for: {keyword_query}")
+            pexels_url = f"https://api.pexels.com/v1/search?query={requests.utils.quote(keyword_query)}&per_page=1&orientation=landscape"
+            pexels_headers = {"Authorization": PEXELS_API_KEY}
+            response = requests.get(pexels_url, headers=pexels_headers, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("photos") and len(data["photos"]) > 0:
+                    photo = data["photos"][0]
+                    # Use large2x for good quality at reasonable size
+                    image_url = photo["src"].get("large2x") or photo["src"].get("original")
+                    photographer = photo.get("photographer", "")
+                    
+                    print(f"Downloading from Pexels: {image_url}")
+                    img_response = requests.get(image_url, timeout=30)
+                    if img_response.status_code == 200:
+                        img = Image.open(BytesIO(img_response.content))
+                        # Resize to target dimensions
+                        img = img.convert('RGB')
+                        img = img.resize((1200, 630), Image.LANCZOS)
+                        img.save(image_path, "JPEG", quality=85)
+                        print(f"Image saved from Pexels: {image_path} (by {photographer})")
+                        return image_path, photographer
+                else:
+                    print("Pexels returned no results for query.")
+            else:
+                print(f"Pexels API error: {response.status_code}")
+        except Exception as e:
+            print(f"Pexels download failed: {e}")
+    else:
+        print("PEXELS_API_KEY not set, skipping Pexels.")
 
     # Fallback to Picsum
     try:
+        fallback_url = "https://picsum.photos/1200/630"
         print(f"Falling back to Picsum: {fallback_url}")
         response = requests.get(fallback_url, timeout=15)
         if response.status_code == 200:
             img = Image.open(BytesIO(response.content))
             img.convert('RGB').save(image_path, "JPEG", quality=85)
             print(f"Image saved from Picsum: {image_path}")
-            return f"/images/{slug}.jpeg"
+            return image_path, "Picsum"
     except Exception as e:
         print(f"Picsum download failed: {e}")
     
-    return "/images/placeholder.jpeg"
+    return "images/placeholder.jpeg", ""
+
+# --- Main Pipeline ---
 
 def main():
     if not GEMINI_API_KEY:
@@ -280,28 +408,35 @@ def main():
         return
 
     print(f"Targeting Topic: {topic}")
-    content = generate_content(topic)
-    category = suggest_category(topic)
     
-    # Programmatic Frontmatter
+    # Step 1: Generate raw content
+    raw_content = generate_content(topic)
+    
+    # Step 2: Humanize the content
+    content = humanize_content(raw_content, topic)
+    
+    # Step 3: Generate metadata
+    category = suggest_category(topic)
+    excerpt = generate_excerpt(topic, content)
+    
+    # Programmatic metadata
     word_count = len(content.split())
     read_time = max(1, word_count // 200)
     date = datetime.date.today().strftime("%Y-%m-%d")
     
-    # Clean excerpt: remove markdown symbols and normalize whitespace
-    clean_text = re.sub(r'[#*`>]', '', content).strip()
-    clean_text = re.sub(r'\s+', ' ', clean_text)
-    excerpt = clean_text[:157] + "..." if len(clean_text) > 160 else clean_text
+    # Step 4: Download image
+    image_result = download_image(topic, slug)
+    image_path, photographer = image_result
     
-    image_path = download_image(topic, slug)
-    
+    # Step 5: Build frontmatter with sanitized fields
     seo_title = safe_yaml_string(topic[:57] + ("..." if len(topic) > 60 else ""))
-    seo_description = safe_yaml_string(clean_text[:157] + ("..." if len(clean_text) > 160 else ""))
+    seo_description = safe_yaml_string(excerpt)
     
     safe_topic = safe_yaml_string(topic)
     safe_excerpt = safe_yaml_string(excerpt)
     safe_category = safe_yaml_string(category)
-    safe_image_alt = safe_yaml_string(f"Digital marketing and business growth in Nepal - {topic}")
+    safe_image_alt = safe_yaml_string(f"{topic}")
+    safe_photographer = safe_yaml_string(photographer) if photographer else ""
 
     frontmatter = f"""---
 slug: {slug}
@@ -313,11 +448,33 @@ category: "{safe_category}"
 excerpt: "{safe_excerpt}"
 image: "{image_path}"
 imageAlt: "{safe_image_alt}"
+imageCredit: "{safe_photographer}"
 seoTitle: "{seo_title}"
 seoDescription: "{seo_description}"
 ---
 
 """
+    
+    # Step 6: Validate frontmatter before writing
+    if not validate_frontmatter(frontmatter):
+        print("WARNING: Frontmatter validation failed. Attempting to fix...")
+        # Fallback: use minimal safe frontmatter
+        frontmatter = f"""---
+slug: {slug}
+title: "{slug}"
+date: {date}
+author: "DebugDream Team"
+readTime: {read_time} min
+category: "Business Strategy"
+excerpt: "Read this article on DebugDream."
+image: "{image_path}"
+imageAlt: "DebugDream blog post"
+seoTitle: "{slug}"
+seoDescription: "Read this article on DebugDream."
+---
+
+"""
+        print("Using fallback frontmatter.")
     
     full_post = frontmatter + content
     

@@ -1,5 +1,4 @@
 ---
-
 slug: seo-services-for-small-businesses
 title: "SEO Services for Small Businesses: A Complete Guide"
 date: "2026-02-16"
@@ -11,7 +10,7 @@ image: "/seo.png"
 imageAlt: "SEO strategy dashboard showing traffic growth and keyword rankings for small businesses"
 seoTitle: "SEO Services for Small Businesses in Nepal"
 seoDescription: "Learn everything about SEO services for small businesses — costs, strategies, timelines, and how to grow organic traffic in Nepal and worldwide."
-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
 
 ## Introduction
 
