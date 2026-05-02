@@ -491,10 +491,11 @@ seoDescription: "Read this article on DebugDream."
     
     full_post = frontmatter + content
     
-    # Ensure posts directory exists
-    os.makedirs("posts", exist_ok=True)
+    # Ensure directories exist
+    target_dir = "ceo_posts" if is_ceo else "posts"
+    os.makedirs(target_dir, exist_ok=True)
     
-    file_path = f"posts/{slug}.md"
+    file_path = f"{target_dir}/{slug}.md"
     with open(file_path, "w") as f:
         f.write(full_post)
         
