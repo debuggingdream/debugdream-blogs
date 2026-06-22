@@ -2,7 +2,7 @@
 slug: beyond-photos-how-video-content-sells-more-for-nepali-online-stores
 title: "Beyond Photos - How Video Content Sells More for Nepali Online Stores"
 date: 2026-05-02
-author: "DebugDream Team"
+author: "Sapana Mudvari"
 readTime: 11 min
 category: "Content Strategy"
 excerpt: "That Indrachowk saree shop? They swapped photos for 15-sec demo videos and sales jumped 20%. Discover how video can revolutionize your Nepali online store."
