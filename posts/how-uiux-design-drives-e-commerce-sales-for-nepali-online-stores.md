@@ -2,7 +2,7 @@
 slug: how-uiux-design-drives-e-commerce-sales-for-nepali-online-stores
 title: "How UI/UX Design Drives E-commerce Sales for Nepali Online Stores"
 date: 2026-05-02
-author: "DebugDream Team"
+author: "Samana Shrestha"
 readTime: 16 min
 category: "E-Commerce"
 excerpt: "The digital marketplace in Nepal is flourishing. From Kathmandu to Pokhara, and even in smaller towns, more and more Nepalis are turning to online stores for..."
