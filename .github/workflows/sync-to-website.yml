@@ -44,4 +44,4 @@ jobs:
 
           git commit -m "auto: sync blog content" || echo "no changes"
 
-          git push https://x-access-token:${{ secrets.WEBSITE_REPO_TOKEN }}@github.com/debuggingdream/debugdream-website.git main
+          git push https://x-access-token:${{ secrets.WEBSITE_REPO_TOKEN }}@github.com/debuggingdream/debugdream-website.git master
