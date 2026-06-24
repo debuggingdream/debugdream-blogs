@@ -1,0 +1,36 @@
+name: Sync Blogs to Website
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout blog repo
+        uses: actions/checkout@v4
+
+      - name: Clone website repo
+        run: |
+          git clone https://x-access-token:${{ secrets.WEBSITE_REPO_TOKEN }}@github.com/debuggingdream/debugdream-website.git
+
+      - name: Sync content
+        run: |
+          rm -rf debuggingdream-website/content/posts
+          rm -rf debuggingdream-website/public/images
+
+          cp -r posts debuggingdream-website/content/posts
+          cp -r images debuggingdream-website/public/images
+
+      - name: Commit to website repo
+        run: |
+          cd debuggingdream-website
+          git config user.name "DebugDream Bot"
+          git config user.email "bot@debugdream.com"
+
+          git add .
+          git commit -m "auto: sync blog content" || echo "no changes"
+          git push
