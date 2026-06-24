@@ -15,37 +15,33 @@ jobs:
 
       - name: Clone website repo
         run: |
-          git clone https://x-access-token:${{ secrets.WEBSITE_REPO_TOKEN }}@github.com/debuggingdream/debugdream-website.git
+          git clone https://x-access-token:${{ secrets.WEBSITE_REPO_TOKEN }}@github.com/debuggingdream/debugdream-website.git website
 
       - name: Sync content
         run: |
-          rm -rf debuggingdream-website/content/posts
-          rm -rf debuggingdream-website/content/ceo_posts
-          rm -rf debuggingdream-website/public/images
-          rm -rf debuggingdream-website/public/ceo_images
+          rm -rf website/content/posts
+          rm -rf website/content/ceo_posts
+          rm -rf website/public/images
+          rm -rf website/public/ceo_images
 
-          mkdir -p debuggingdream-website/content/posts
-          mkdir -p debuggingdream-website/content/ceo_posts
-          mkdir -p debuggingdream-website/public/images
-          mkdir -p debuggingdream-website/public/ceo_images
+          mkdir -p website/content/posts
+          mkdir -p website/content/ceo_posts
+          mkdir -p website/public/images
+          mkdir -p website/public/ceo_images
 
-          cp -r posts/. debuggingdream-website/content/posts/
-          cp -r ceo_posts/. debuggingdream-website/content/ceo_posts/
-          cp -r images/. debuggingdream-website/public/images/
-          cp -r ceo_images/. debuggingdream-website/public/ceo_images/
+          cp -r posts/. website/content/posts/
+          cp -r ceo_posts/. website/content/ceo_posts/
+          cp -r images/. website/public/images/
+          cp -r ceo_images/. website/public/ceo_images/
 
-      - name: Commit to website repo
+      - name: Commit and push to website repo
         run: |
-          cd debuggingdream-website
+          cd website
           git config user.name "DebugDream Bot"
           git config user.email "bot@debugdream.com"
 
           git add .
+
           git commit -m "auto: sync blog content" || echo "no changes"
-          git push
 
-
-
-
-
-          
+          git push https://x-access-token:${{ secrets.WEBSITE_REPO_TOKEN }}@github.com/debuggingdream/debugdream-website.git main
