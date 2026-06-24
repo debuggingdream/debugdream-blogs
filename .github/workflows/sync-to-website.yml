@@ -20,15 +20,19 @@ jobs:
       - name: Sync content
         run: |
           rm -rf debuggingdream-website/content/posts
-          rm -rf debuggingdream-website/public/images
           rm -rf debuggingdream-website/content/ceo_posts
+          rm -rf debuggingdream-website/public/images
           rm -rf debuggingdream-website/public/ceo_images
-          
-          cp -r posts debuggingdream-website/content/posts
-          cp -r ceo_posts debuggingdream-website/content/ceo_posts
 
-          cp -r images debuggingdream-website/public/images
-          cp -r ceo_images debuggingdream-website/public/ceo_images
+          mkdir -p debuggingdream-website/content/posts
+          mkdir -p debuggingdream-website/content/ceo_posts
+          mkdir -p debuggingdream-website/public/images
+          mkdir -p debuggingdream-website/public/ceo_images
+
+          cp -r posts/. debuggingdream-website/content/posts/
+          cp -r ceo_posts/. debuggingdream-website/content/ceo_posts/
+          cp -r images/. debuggingdream-website/public/images/
+          cp -r ceo_images/. debuggingdream-website/public/ceo_images/
 
       - name: Commit to website repo
         run: |
